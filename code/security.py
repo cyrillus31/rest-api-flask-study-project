@@ -37,12 +37,14 @@ def safe_str_cmp(a: str, b: str) -> bool:
     return hmac.compare_digest(a, b)
 
 def authenticate(username, password):
-    user = username_mapping.get(username, None)
+    # user = username_mapping.get(username, None)
+    user = User.find_by_username(username)
     if user and safe_str_cmp(user.password, password): # if user and passowrd exists then return the user oject
         return user
 
 
 def identity(payload):
     user_id = payload['identity']
-    user = userid_mapping.get(user_id, None)           # find if a user with such an id exists and return user object or none
+    # user = userid_mapping.get(user_id, None)           # find if a user with such an id exists and return user object or none
+    user = User.find_by_id(user_id)
     return user
