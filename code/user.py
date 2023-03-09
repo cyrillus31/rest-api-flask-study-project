@@ -41,6 +41,7 @@ class User:
         connection.close()
         return user
 
+# this resource will allow us
 class UserRegister(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument("username", type=str, required=True, help="I don't know what to say!")
@@ -49,6 +50,7 @@ class UserRegister(Resource):
     def post(self):
         data = UserRegister.parser.parse_args()
 
+        # checking if the user is already in database
         if User.find_by_username(data["username"]):
             return {"message": "user already exists"}, 400
 
@@ -63,4 +65,5 @@ class UserRegister(Resource):
 
         return {"message": "user created successfully"}, 201
         
+
 
