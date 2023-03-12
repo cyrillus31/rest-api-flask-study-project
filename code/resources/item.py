@@ -1,6 +1,7 @@
 import sqlite3
 from flask_restful import Resource, reqparse, request
 from flask_jwt import jwt_required
+from models.item import ItemModel
 
 
 class Item(Resource):
@@ -12,66 +13,29 @@ class Item(Resource):
 
     @jwt_required() # this is a speciall callable decorator that returns a decorator when called (e.g. some_method = some_decorator()(some_method))
     def get(self, name):
-        item = Item.findByName(name)
+        item = ItemModel.find_by_name(name)
         if item:
-            return item
+            return item.json()
         
         return {
-            'message': 'Item not found'
+            'message': 'ItemModel not found'
         }, 404
 
-    @classmethod
-    def findByName(cls, name):
-        connection = sqlite3.connect("data.db")
-        cursor = connection.cursor()
-
-        query = "SELECT * FROM items WHERE name = ?"
-        result = cursor.execute(query, (name, ))
-        row = result.fetchone()
-        connection.close()
-
-        if row:
-            return {
-                'item': {
-                'name': row[0],
-                'price': row[1]
-                }
-            }
     
-    @classmethod
-    def insert(cls, item):
-        connection = sqlite3.connect("data.db")
-        cursor = connection.cursor()
-
-        query = "INSERT INTO items VALUES (?, ?)"
-        cursor.execute(query, (item["name"], item["price"]))
-
-        connection.commit()
-        connection.close()
-    
-    @classmethod
-    def update(cls, item):
-        connection = sqlite3.connect("data.db")
-        cursor = connection.cursor()
-
-        cursor.execute("UPDATE items SET price=? WHERE name=?", (item["price"], item["name"]))
-        
-        connection.commit()
-        connection.close()
 
     def post(self, name):
-        if Item.findByName(name):
+        if ItemModel.find_by_name(name):
             return {"message": "an item with name {} already exists".format(name)}, 400
 
         data = request.get_json() # this allows for your api to access the request's body payload in json
         price = data["price"]
-        item = {'name': name, 'price': price}
+        item = ItemModel(name, price)
         try:
-            Item.insert(item)
+            item.insert()
         except:
             return {"message": "Something went wrong trying to insert the item into DB"}, 500
 
-        return item, 201
+        return item.json(), 201
 
     def delete(self, name):
         connection = sqlite3.connect("data.db")
@@ -88,22 +52,20 @@ class Item(Resource):
     def put(self, name):
         data = Item.parser.parse_args() #defined at the beginning of the class
 
-        item = Item.findByName(name)
-        updated_item = {"name": name, "price": data["price"]}
+        item = ItemModel.find_by_name(name)
+        updated_item = ItemModel(name, data["price"])
         if item is None:
             try:
-                Item.insert(updated_item)
+                updated_item.insert()
             except:
                 return {"message": "An error occured inserting an item"}, 500
         else:
             try:
-                Item.update(updated_item)
+                item.update()
             except:
                 return {"message": "An error occured updating an item"}, 500
 
-        return updated_item
-
-
+        return updated_item.json()
 
 
 class ItemList(Resource):
