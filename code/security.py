@@ -2,7 +2,7 @@ import hmac
 import warnings
 from resources.user import UserModel
 users = [
-    User(1, 'bob', 'qwe')
+    UserModel(1, 'bob', 'qwe')
 ]
 
 

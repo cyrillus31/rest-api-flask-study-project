@@ -29,23 +29,18 @@ class Item(Resource):
 
         data = request.get_json() # this allows for your api to access the request's body payload in json
         price = data["price"]
-        item = ItemModel(name, price)
+        item = ItemModel(name, data["price"])
         try:
-            item.insert()
+            item.save_to_db()
         except:
             return {"message": "Something went wrong trying to insert the item into DB"}, 500
 
         return item.json(), 201
 
     def delete(self, name):
-        connection = sqlite3.connect("data.db")
-        cursor = connection.cursor()
-        
-        query = "DELETE FROM items WHERE name=?"
-
-        cursor.execute(query, (name,))
-        connection.commit()
-        connection.close()
+        item = ItemModel.find_by_name(name)
+        if item:
+            item.delete_from_db()
 
         return {"message": "item deleted"}
 
@@ -53,19 +48,16 @@ class Item(Resource):
         data = Item.parser.parse_args() #defined at the beginning of the class
 
         item = ItemModel.find_by_name(name)
-        updated_item = ItemModel(name, data["price"])
-        if item is None:
-            try:
-                updated_item.insert()
-            except:
-                return {"message": "An error occured inserting an item"}, 500
-        else:
-            try:
-                item.update()
-            except:
-                return {"message": "An error occured updating an item"}, 500
 
-        return updated_item.json()
+        if item is None:
+            item = ItemModel(name, data["price"])
+
+        else:
+            item.price = data["price"]
+        
+        item.save_to_db()
+
+        return item.json()
 
 
 class ItemList(Resource):
@@ -76,7 +68,7 @@ class ItemList(Resource):
         items = []
 
         for row in rows:
-            items.append({"name": row[0], "price": row[1]})
+            items.append({"name": row[1], "price": row[2]})
         
         connection.close()
 
